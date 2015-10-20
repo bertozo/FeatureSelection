@@ -98,23 +98,13 @@ def main():
     #load_file = "../test.csv"
     #test_name = "teste"
 
-
-    # load_file = "/home/toro/bds/20newsgroups.csv"
-    # test_name = "20newsgroups"
-    # load_icmi_matrix = "20newsgroups_icmi.npy"
-
-    # load_file = "/home/toro/bds/ohsumed.csv"
-    # test_name = "ohsumed"
-    # load_icmi_matrix = "ohsumed_icmi.npy"
-
-    load_file = "/home/toro/bds/SCY-gene.csv"
-    test_name = "scy_gene"
-    load_icmi_matrix = "/home/toro/testes/metricas_numpy/scy_gene_icmi.npy"
+    load_file = "../aca/ionosphere.csv"
+    test_name = "ionosphere"
 
     save_icmi_matrix = test_name
     k = 1
     test_name += "_k" + str(k)
-    MMP(load_file, test_name=test_name, k=k, load_icmi_matrix=load_icmi_matrix, save_icmi_matrix=False)
+    MMP(load_file, test_name=test_name, k=k, load_icmi_matrix=False, save_icmi_matrix=False)
     print "Experimento: ", test_name, "OK"
 
 if __name__ == "__main__":
