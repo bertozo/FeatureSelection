@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+from setuptools.command.saveopts import saveopts
+from setuptools.command.test import test
 from time import time
 import pandas as pd
 import _mmp
@@ -20,22 +22,21 @@ def MMP(load_file, test_name, k, load_icmi_matrix=False,
 
     # Salvar ou carregar matriz dos icmi ja computados
     if load_icmi_matrix:
-        icmi_array = np.load(load_icmi_matrix)
-        print "Load icmi OK"
+        icmi_array = np.load(load_icmi_matrix, mmap_mode='c')
+        print "Load icmi OK *"
     else:
-        # computar icmi
+        print "Teste"
         t = time()
         icmi_array = _mmp.Compute_ICMI(numeric_data)
         t = time()-t
         print "Compute icmi ok, time: %f" % t
 
     if save_icmi_matrix and load_icmi_matrix == False:
-        np.save(test_name + ".npy", icmi_array)
+        np.save(save_icmi_matrix + ".npy", icmi_array)
         print "Save icmi OK"
 
-
     print "Start Select Atributes:"
-
+    # selected_atributes = _mmp.SelectAtributes_x(icmi_array, k)
     selected_atributes = SelectAtributes(icmi_array, k)
     Mount_CSV(selected_atributes, numpy_array, original_headers, test_name)
 
@@ -48,47 +49,73 @@ def MMP(load_file, test_name, k, load_icmi_matrix=False,
 def SelectAtributes(icmi_array, k):
 
     selected_atributes = []
-
     i = 0
+    mask = np.array([True]*icmi_array.shape[0])
 
-    len_icmi_array = len(icmi_array)
+    len_icmi_array = icmi_array.shape[0]
+    k_aux = 0
+
+    # k_neighbors = np.argsort(icmi_array)[:,:k+1]
+    # kth = k_neighbors[:,k]
     while True:
-        k_aux = 0
-        if k > len_icmi_array:
-            k = len_icmi_array -1
 
-        # find index where icmi is min
-        index = icmi_array.argmin()
-        if index == 0:
+        len_selected_Atributes = len(selected_atributes)
+        print "selecting: ", len_selected_Atributes
+
+        if k_aux >= len_icmi_array:
             break
 
-        l = index/len_icmi_array
-        c = index%len_icmi_array
+        if k <= 0:
+            break
 
-        selected_atributes.append(l)
+        k_neighbors = np.argsort(icmi_array)[:,:k+1]
+        kth = k_neighbors[:,k]
 
-        while k_aux < k:
-            aux = icmi_array[l].argmin()
-            icmi_array[:,aux].fill(np.inf)
-            icmi_array[aux,:].fill(np.inf)
-            icmi_array[l][aux] = np.inf
+        if len_icmi_array - (k_aux + k) <= 1:
+            if icmi_array[mask,k_neighbors[:,0]].min() != np.inf:
+                selected_atributes.append(icmi_array[mask,k_neighbors[:,0]].argmin())
+            break
+
+        # seleciona o k vizinho mais proximo (vizinho com o menor icmi)
+        s = np.argmin(icmi_array[mask,kth])
+        select = k_neighbors[s][0]
+        selected_atributes.append(select)
+
+        for i in k_neighbors[s]:
+            icmi_array[:,i].fill(np.inf)
+            icmi_array[i,:].fill(np.inf)
             k_aux += 1
 
-        icmi_array[:,l].fill(np.inf)
-        icmi_array[l,:].fill(np.inf)
+        if np.min(icmi_array) == np.inf:
+            break
 
     selected_atributes.sort()
+    print selected_atributes
     return np.array(selected_atributes)
 
 
 def main():
-    # load_file = "../test.csv"
-    # test_name = "test"
+    #load_file = "../test.csv"
+    #test_name = "teste"
 
-    load_file = "/home/bertozo/Área de Trabalho/RESULTADOS/20_newsgroups/00_20_newsgroups.csv"
-    test_name = "MMP_k3_selected_20_newsgroups"
-    k = 3
-    MMP(load_file, test_name, k,save_icmi_matrix=True)
+
+    # load_file = "/home/toro/bds/20newsgroups.csv"
+    # test_name = "20newsgroups"
+    # load_icmi_matrix = "20newsgroups_icmi.npy"
+
+    # load_file = "/home/toro/bds/ohsumed.csv"
+    # test_name = "ohsumed"
+    # load_icmi_matrix = "ohsumed_icmi.npy"
+
+    load_file = "/home/toro/bds/SCY-gene.csv"
+    test_name = "scy_gene"
+    load_icmi_matrix = "/home/toro/testes/metricas_numpy/scy_gene_icmi.npy"
+
+    save_icmi_matrix = test_name
+    k = 1
+    test_name += "_k" + str(k)
+    MMP(load_file, test_name=test_name, k=k, load_icmi_matrix=load_icmi_matrix, save_icmi_matrix=False)
+    print "Experimento: ", test_name, "OK"
 
 if __name__ == "__main__":
     main()
